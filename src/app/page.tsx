@@ -48,10 +48,20 @@ export default function AppPontoSJP() {
     await supabase.from('reservas').update({ status: 'Concluido' }).eq('motorista_id', mId)
   }
 
+  // FUNÇÃO DE REALOCAÇÃO (TRANSFERIR)
+  const transferirReserva = async (res: any) => {
+    const idDestino = prompt("Digite o ID do motorista que vai levar esse passageiro:")
+    if (idDestino) {
+      const { error } = await supabase.from('reservas').update({ motorista_id: idDestino }).eq('id', res.id)
+      if (!error) alert("Passageiro transferido!")
+      else alert("Erro ao transferir. Verifique o ID.")
+    }
+  }
+
   return (
     <main style={{ backgroundColor: '#f3f4f6', minHeight: '100vh', padding: '20px', fontFamily: 'sans-serif' }}>
       
-      {/* O DETALHE QUE VOLTOU: Título do App */}
+      {/* Título Identidade */}
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ margin: 0, fontSize: '32px', fontWeight: '800', color: '#111827' }}>
           Tô no Ponto <span style={{ color: '#ea580c' }}>SJP</span>
@@ -67,7 +77,7 @@ export default function AppPontoSJP() {
         {view === 'passageiro' ? (
           motoristas.map(m => (
             <div key={m.id} style={{ background: 'white', padding: '20px', borderRadius: '20px', marginBottom: '15px', borderTop: '8px solid #ea580c' }}>
-              <h3>{m.nome}</h3>
+              <h3>{m.nome} (ID: {m.id})</h3>
               <div style={{ display: 'flex', gap: '8px' }}>
                 {[1, 2, 3, 4].map(n => {
                   const ocupada = m[`vaga_${n}_status`] === 'Ocupado'
@@ -88,14 +98,21 @@ export default function AppPontoSJP() {
               <div key={m.id} style={{ background: 'white', padding: '20px', borderRadius: '20px', marginBottom: '20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ margin: '0 0 10px 0' }}>{m.nome}</h3>
                 <button onClick={() => iniciarViagem(m.id)} style={{ width: '100%', padding: '12px', background: 'black', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 'bold', marginBottom: '15px' }}>🚀 INICIAR VIAGEM / LIMPAR VAGAS</button>
+                
+                {/* Lista de Reservas com os botões completos */}
                 {reservas.filter(r => r.motorista_id === m.id).map(res => (
                   <div key={res.id} style={{ padding: '15px', border: '1px solid #fed7aa', borderRadius: '12px', marginBottom: '10px', background: res.status === 'Aceito' ? '#f0fdf4' : '#fff7ed' }}>
                     <p style={{ margin: 0 }}><strong>Vaga {res.vaga_numero}:</strong> {res.nome_passageiro}</p>
                     <p style={{ margin: '5px 0', fontSize: '13px', color: '#666' }}>📍 {res.endereco}</p>
-                    {res.status === 'Pendente' && (
-                      <button onClick={() => aceitarReserva(res)} style={{ width: '100%', padding: '10px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>ACEITAR</button>
-                    )}
-                    {res.status === 'Aceito' && <span style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '12px' }}>✓ Aceito</span>}
+                    
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                      {res.status === 'Pendente' && (
+                        <button onClick={() => aceitarReserva(res)} style={{ flex: 1, padding: '10px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>ACEITAR</button>
+                      )}
+                      <button onClick={() => transferirReserva(res)} style={{ flex: 1, padding: '10px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>TRANSFERIR</button>
+                    </div>
+                    
+                    {res.status === 'Aceito' && <div style={{ textAlign: 'center', marginTop: '10px', color: '#16a34a', fontWeight: 'bold', fontSize: '14px' }}>✓ Aceito com Sucesso</div>}
                   </div>
                 ))}
               </div>
@@ -104,14 +121,15 @@ export default function AppPontoSJP() {
         )}
       </div>
 
+      {/* Formulário de Reserva */}
       {selecionado && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 100 }}>
           <form onSubmit={confirmarReserva} style={{ background: 'white', padding: '30px', borderRadius: '25px', width: '100%', maxWidth: '400px' }}>
             <h3 style={{ marginTop: 0 }}>Reserva para {selecionado.nome} (Vaga {selecionado.vaga})</h3>
             <input name="nome" placeholder="Seu Nome" required style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '10px', border: '1px solid #ddd' }} />
             <input name="endereco" placeholder="Endereço de Busca" required style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '10px', border: '1px solid #ddd' }} />
-            <button type="submit" style={{ width: '100%', padding: '15px', background: '#ea580c', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 'bold' }}>CONFIRMAR</button>
-            <button type="button" onClick={() => setSelecionado(null)} style={{ width: '100%', background: 'none', border: 'none', marginTop: '15px', color: '#666' }}>Voltar</button>
+            <button type="submit" style={{ width: '100%', padding: '15px', background: '#ea580c', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>CONFIRMAR</button>
+            <button type="button" onClick={() => setSelecionado(null)} style={{ width: '100%', background: 'none', border: 'none', marginTop: '15px', color: '#666', cursor: 'pointer' }}>Voltar</button>
           </form>
         </div>
       )}
