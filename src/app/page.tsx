@@ -18,10 +18,7 @@ export default function AppPontoSJP() {
 
   useEffect(() => {
     carregarDados()
-    // REALTIME: Escuta qualquer mudança e atualiza a tela na hora!
-    const canal = supabase.channel('ponto')
-      .on('postgres_changes', { event: '*', schema: 'public' }, carregarDados)
-      .subscribe()
+    const canal = supabase.channel('ponto').on('postgres_changes', { event: '*', schema: 'public' }, carregarDados).subscribe()
     return () => { supabase.removeChannel(canal) }
   }, [])
 
@@ -35,7 +32,7 @@ export default function AppPontoSJP() {
       status: 'Pendente'
     }])
     if (!error) {
-      setReservaConfirmada(`Vaga ${selecionado.vaga} reservada com ${selecionado.nome}! Aguarde confirmação no painel.`);
+      setReservaConfirmada(`Vaga ${selecionado.vaga} reservada com ${selecionado.nome}!`);
       setSelecionado(null);
     }
   }
@@ -48,11 +45,18 @@ export default function AppPontoSJP() {
 
   const iniciarViagem = async (mId: number) => {
     if (!confirm("Limpar carro para nova viagem?")) return
-    await supabase.from('motoristas').update({ vaga_1_status: 'Livre', vaga_2_status: 'Livre', vaga_3_status: 'Livre', vaga_4_status: 'Livre' }).eq('id', mId)
+    await supabase.from('motoristas').update({ 
+      vaga_1_status: 'Livre', vaga_2_status: 'Livre', vaga_3_status: 'Livre', vaga_4_status: 'Livre',
+      horario_saida: 'A definir' 
+    }).eq('id', mId)
     await supabase.from('reservas').update({ status: 'Concluido' }).eq('motorista_id', mId)
   }
 
-  // SEGURANÇA: Proteção simples para aba motorista
+  // NOVA FUNÇÃO: Motorista edita seu próprio horário
+  const atualizarHorario = async (mId: number, novoHorario: string) => {
+    await supabase.from('motoristas').update({ horario_saida: novoHorario }).eq('id', mId)
+  }
+
   const entrarModoMotorista = () => {
     const senha = prompt("Digite a senha de acesso:")
     if (senha === "123") setView('motorista')
@@ -74,7 +78,7 @@ export default function AppPontoSJP() {
       {reservaConfirmada && (
         <div style={{ background: '#dcfce7', color: '#166534', padding: '15px', borderRadius: '12px', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #16a34a' }}>
           ✅ {reservaConfirmada}
-          <button onClick={() => setReservaConfirmada(null)} style={{ marginLeft: '10px', background: 'none', border: 'none', cursor: 'pointer' }}>✖</button>
+          <button onClick={() => setReservaConfirmada(null)} style={{ marginLeft: '10px', background: 'none', border: 'none' }}>✖</button>
         </div>
       )}
 
@@ -84,7 +88,9 @@ export default function AppPontoSJP() {
             <div key={m.id} style={{ background: 'white', padding: '20px', borderRadius: '20px', marginBottom: '15px', borderTop: '8px solid #ea580c' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0 }}>{m.nome}</h3>
-                <span style={{ fontSize: '12px', background: '#f3f4f6', padding: '4px 8px', borderRadius: '8px' }}>🕒 Saída: {m.horario_saida}</span>
+                <span style={{ fontSize: '13px', background: '#fff7ed', color: '#c2410c', padding: '6px 12px', borderRadius: '20px', fontWeight: 'bold', border: '1px solid #fdba74' }}>
+                   🕒 {m.horario_saida}
+                </span>
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '15px' }}>
                 {[1, 2, 3, 4].map(n => {
@@ -103,13 +109,28 @@ export default function AppPontoSJP() {
           <div>
             <h2 style={{ textAlign: 'center' }}>Painel de Controle</h2>
             {motoristas.map(m => (
-              <div key={m.id} style={{ background: 'white', padding: '20px', borderRadius: '20px', marginBottom: '20px' }}>
-                <h3>{m.nome}</h3>
+              <div key={m.id} style={{ background: 'white', padding: '20px', borderRadius: '20px', marginBottom: '20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                <div style={{ borderBottom: '1px solid #eee', marginBottom: '15px', paddingBottom: '10px' }}>
+                  <h3 style={{ margin: '0 0 10px 0' }}>{m.nome}</h3>
+                  
+                  {/* EDIÇÃO DE HORÁRIO PELO MOTORISTA */}
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: 14:00 ou Aguardando" 
+                      defaultValue={m.horario_saida}
+                      onBlur={(e) => atualizarHorario(m.id, e.target.value)}
+                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #ddd' }}
+                    />
+                    <button style={{ fontSize: '12px', background: '#eee', border: 'none', padding: '5px 10px', borderRadius: '8px' }}>Salvar</button>
+                  </div>
+                </div>
+
                 <button onClick={() => iniciarViagem(m.id)} style={{ width: '100%', padding: '12px', background: 'black', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 'bold', marginBottom: '15px' }}>🚀 INICIAR VIAGEM / LIMPAR</button>
+                
                 {reservas.filter(r => r.motorista_id === m.id).map(res => (
                   <div key={res.id} style={{ padding: '15px', border: '1px solid #fed7aa', borderRadius: '12px', marginBottom: '10px', background: res.status === 'Aceito' ? '#f0fdf4' : '#fff7ed' }}>
                     <p><strong>Vaga {res.vaga_numero}:</strong> {res.nome_passageiro}</p>
-                    <p style={{ fontSize: '13px' }}>📍 {res.endereco}</p>
                     {res.status === 'Pendente' && (
                       <button onClick={() => aceitarReserva(res)} style={{ width: '100%', padding: '10px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>ACEITAR</button>
                     )}
