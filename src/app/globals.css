@@ -1,3 +1,36 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+body {
+  background-color: #f3f4f6;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #111827;
+  font-size: 2.5rem;
+}
+
+.motorista-card {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-top: 5px solid #ea580c;
+}
+
+.btn-vaga {
+  background: #f3f4f6;
+  border: none;
+  padding: 15px;
+  margin: 5px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-vaga.active {
+  background: #ea580c;
+  color: white;
+}
