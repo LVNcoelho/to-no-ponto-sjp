@@ -36,14 +36,12 @@ export default function AppPontoSJP() {
     }
   }
 
-  // ESSA É A FUNÇÃO QUE SALVA A JOANA!
   const aceitarReserva = async (res: any) => {
     await supabase.from('reservas').update({ status: 'Aceito' }).eq('id', res.id)
     const colunaVaga = `vaga_${res.vaga_numero}_status`
     await supabase.from('motoristas').update({ [colunaVaga]: 'Ocupado' }).eq('id', res.motorista_id)
   }
 
-  // ESSA LIMPA O PAINEL
   const iniciarViagem = async (mId: number) => {
     if (!confirm("Limpar carro?")) return
     await supabase.from('motoristas').update({ vaga_1_status: 'Livre', vaga_2_status: 'Livre', vaga_3_status: 'Livre', vaga_4_status: 'Livre' }).eq('id', mId)
@@ -52,9 +50,17 @@ export default function AppPontoSJP() {
 
   return (
     <main style={{ backgroundColor: '#f3f4f6', minHeight: '100vh', padding: '20px', fontFamily: 'sans-serif' }}>
+      
+      {/* O DETALHE QUE VOLTOU: Título do App */}
+      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <h1 style={{ margin: 0, fontSize: '32px', fontWeight: '800', color: '#111827' }}>
+          Tô no Ponto <span style={{ color: '#ea580c' }}>SJP</span>
+        </h1>
+      </div>
+
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <button onClick={() => setView('passageiro')} style={{ padding: '10px 20px', borderRadius: '20px', border: 'none', background: view === 'passageiro' ? '#ea580c' : '#ccc', color: 'white', fontWeight: 'bold' }}>PASSAGEIRO</button>
-        <button onClick={() => setView('motorista')} style={{ marginLeft: '10px', padding: '10px 20px', borderRadius: '20px', border: 'none', background: view === 'motorista' ? '#ea580c' : '#ccc', color: 'white', fontWeight: 'bold' }}>MOTORISTA</button>
+        <button onClick={() => setView('passageiro')} style={{ padding: '10px 20px', borderRadius: '20px', border: 'none', background: view === 'passageiro' ? '#ea580c' : '#ccc', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>PASSAGEIRO</button>
+        <button onClick={() => setView('motorista')} style={{ marginLeft: '10px', padding: '10px 20px', borderRadius: '20px', border: 'none', background: view === 'motorista' ? '#ea580c' : '#ccc', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>MOTORISTA</button>
       </div>
 
       <div style={{ maxWidth: '500px', margin: '0 auto' }}>
