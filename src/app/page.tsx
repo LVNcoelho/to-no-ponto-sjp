@@ -1,33 +1,28 @@
-'use client'
-import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-export default function HomePage() {
-  const [veiculos, setVeiculos] = useState<any[]>([])
-
-  useEffect(() => {
-    const fetchVeiculos = async () => {
-      const { data } = await supabase.from('veiculos').select('*').order('ordem', { ascending: true })
-      setVeiculos(data || [])
-    }
-    fetchVeiculos()
-  }, [])
+export default async function Page() {
+  // Busca os motoristas do banco de dados
+  const { data: motoristas } = await supabase
+    .from('motoristas')
+    .select('*')
+    .order('vaga', { ascending: true });
 
   return (
-    <main className="p-4 bg-gray-100 min-h-screen font-sans">
-      <h1 className="text-2xl font-black text-center text-orange-600 mb-6 uppercase">Tô no Ponto SJP</h1>
-      <div className="max-w-md mx-auto space-y-4">
-        {veiculos.map((carro) => (
-          <div key={carro.id} className="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-orange-500">
-            <h2 className="text-xl font-bold text-gray-800 uppercase leading-none">{carro.motorista_nome}</h2>
-            <p className="text-[10px] text-gray-400 mb-4 font-bold uppercase mt-1">{carro.carro_info}</p>
-            <div className="grid grid-cols-4 gap-3">
-              {[1, 2, 3, 4].map((v) => (
+    <main className="min-h-screen bg-gray-100 p-8">
+      <h1 className="text-3xl font-bold text-center mb-8 text-black">Tô no Ponto SJP</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {motoristas?.map((m) => (
+          <div key={m.id} className="bg-white p-6 rounded-xl shadow-lg border-l-8 border-orange-500">
+            <h2 className="text-xl font-bold text-gray-800">{m.nome}</h2>
+            <p className="text-gray-500 mb-4">Vaga Atual: {m.vaga}</p>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4].map((num) => (
                 <button 
-                  key={v}
-                  className={`h-14 rounded-xl text-xl font-black shadow-sm ${carro[`vaga_${v}_ocupada`] ? 'bg-gray-200 text-gray-400' : 'bg-orange-500 text-white active:scale-95'}`}
+                  key={num}
+                  className={`px-4 py-2 rounded-md font-bold ${m.vaga === num ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'}`}
                 >
-                  {v}
+                  {num}
                 </button>
               ))}
             </div>
