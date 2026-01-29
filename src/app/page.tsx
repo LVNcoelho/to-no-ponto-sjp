@@ -35,66 +35,83 @@ export default function AppPontoSJP() {
     }])
 
     if (!error) {
-      alert("Sucesso! Aguarde o motorista.")
+      alert("Reserva enviada com sucesso!")
       setSelecionado(null)
-    } else {
-      alert("Erro ao salvar no banco.")
     }
+  }
+
+  const aceitarReserva = async (res: any) => {
+    await supabase.from('reservas').update({ status: 'Aceito' }).eq('id', res.id)
+    const colunaVaga = `vaga_${res.vaga_numero}_status`
+    await supabase.from('motoristas').update({ [colunaVaga]: 'Ocupado' }).eq('id', res.motorista_id)
+  }
+
+  const iniciarViagem = async (mId: number) => {
+    if (!confirm("Limpar vagas deste carro?")) return
+    await supabase.from('motoristas').update({ vaga_1_status: 'Livre', vaga_2_status: 'Livre', vaga_3_status: 'Livre', vaga_4_status: 'Livre' }).eq('id', mId)
+    await supabase.from('reservas').update({ status: 'Concluido' }).eq('motorista_id', mId)
   }
 
   return (
     <main style={{ backgroundColor: '#f3f4f6', minHeight: '100vh', padding: '20px', fontFamily: 'sans-serif' }}>
-      {/* Botões de Troca de Visão */}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <button onClick={() => setView('passageiro')} style={{ padding: '10px 20px', borderRadius: '20px', background: view === 'passageiro' ? '#ea580c' : '#ccc', color: 'white', border: 'none', cursor: 'pointer' }}>PASSAGEIRO</button>
-        <button onClick={() => setView('motorista')} style={{ marginLeft: '10px', padding: '10px 20px', borderRadius: '20px', background: view === 'motorista' ? '#ea580c' : '#ccc', color: 'white', border: 'none', cursor: 'pointer' }}>MOTORISTA</button>
+        <button onClick={() => setView('passageiro')} style={{ padding: '10px 20px', borderRadius: '20px', border: 'none', background: view === 'passageiro' ? '#ea580c' : '#ccc', color: 'white', fontWeight: 'bold' }}>PASSAGEIRO</button>
+        <button onClick={() => setView('motorista')} style={{ marginLeft: '10px', padding: '10px 20px', borderRadius: '20px', border: 'none', background: view === 'motorista' ? '#ea580c' : '#ccc', color: 'white', fontWeight: 'bold' }}>MOTORISTA</button>
       </div>
 
-      {view === 'passageiro' ? (
-        <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-          {motoristas.map(m => (
+      <h1 style={{ textAlign: 'center' }}>Carros no Ponto <span style={{ color: '#ea580c' }}>SJP</span></h1>
+
+      <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+        {view === 'passageiro' ? (
+          motoristas.map(m => (
             <div key={m.id} style={{ background: 'white', padding: '20px', borderRadius: '20px', marginBottom: '15px', borderTop: '8px solid #ea580c' }}>
-              <h2 style={{ margin: 0 }}>{m.nome}</h2>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '15px' }}>
+              <h3>{m.nome}</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 {[1, 2, 3, 4].map(n => {
                   const ocupada = m[`vaga_${n}_status`] === 'Ocupado'
                   return (
                     <button key={n} disabled={ocupada} onClick={() => setSelecionado({ id: m.id, vaga: n, nome: m.nome })}
-                      style={{ flex: 1, padding: '15px 0', borderRadius: '12px', border: 'none', background: ocupada ? '#eee' : '#ea580c', color: ocupada ? '#aaa' : 'white', fontWeight: 'bold' }}>
+                      style={{ flex: 1, padding: '15px 0', borderRadius: '10px', border: 'none', background: ocupada ? '#eee' : '#ea580c', color: ocupada ? '#aaa' : 'white', fontWeight: 'bold' }}>
                       {n}
                     </button>
                   )
                 })}
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        /* O Painel que já está funcionando */
-        <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+          ))
+        ) : (
+          /* RESTAURADO: Painel de Controle com Motoristas */
+          <div>
             <h2 style={{ textAlign: 'center' }}>Painel de Controle</h2>
-            {/* ... o código do painel motorista que você já aprovou ... */}
-        </div>
-      )}
+            {motoristas.map(m => (
+              <div key={m.id} style={{ background: 'white', padding: '20px', borderRadius: '20px', marginBottom: '20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ margin: '0 0 10px 0' }}>{m.nome}</h3>
+                <button onClick={() => iniciarViagem(m.id)} style={{ width: '100%', padding: '12px', background: 'black', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 'bold', marginBottom: '15px' }}>🚀 INICIAR VIAGEM / LIMPAR VAGAS</button>
+                
+                {/* Notificações de Passageiros */}
+                {reservas.filter(r => r.motorista_id === m.id).map(res => (
+                  <div key={res.id} style={{ padding: '15px', border: '1px solid #fed7aa', borderRadius: '12px', marginBottom: '10px', background: '#fff7ed' }}>
+                    <p style={{ margin: 0 }}><strong>Vaga {res.vaga_numero}:</strong> {res.nome_passageiro}</p>
+                    <p style={{ margin: '5px 0', fontSize: '13px', color: '#666' }}>📍 {res.endereco}</p>
+                    {res.status === 'Pendente' && (
+                      <button onClick={() => aceitarReserva(res)} style={{ width: '100%', padding: '10px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>ACEITAR</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* MODAL DE RESERVA - ONDE O BOTÃO CONFIRMAR FICA */}
       {selecionado && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 999 }}>
-          <form onSubmit={confirmarReserva} style={{ background: 'white', padding: '30px', borderRadius: '25px', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
-            <h3 style={{ margin: 0 }}>Reservar com {selecionado.nome}</h3>
-            <p style={{ color: '#666', marginBottom: '20px' }}>Você escolheu a Vaga {selecionado.vaga}</p>
-            
-            <input name="nome" placeholder="Seu Nome" required style={{ width: '100%', padding: '15px', marginBottom: '10px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '16px' }} />
-            <input name="endereco" placeholder="Seu Endereço" required style={{ width: '100%', padding: '15px', marginBottom: '20px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '16px' }} />
-            
-            {/* O BOTÃO QUE TINHA SUMIDO */}
-            <button type="submit" style={{ width: '100%', padding: '18px', background: '#ea580c', color: 'white', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '18px', cursor: 'pointer' }}>
-              CONFIRMAR AGORA
-            </button>
-            
-            <button type="button" onClick={() => setSelecionado(null)} style={{ marginTop: '15px', background: 'none', border: 'none', color: '#ef4444', fontWeight: 'bold', cursor: 'pointer' }}>
-              Cancelar e Voltar
-            </button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 100 }}>
+          <form onSubmit={confirmarReserva} style={{ background: 'white', padding: '30px', borderRadius: '25px', width: '100%', maxWidth: '400px' }}>
+            <h3 style={{ marginTop: 0 }}>Reserva para {selecionado.nome} (Vaga {selecionado.vaga})</h3>
+            <input name="nome" placeholder="Seu Nome" required style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '10px', border: '1px solid #ddd' }} />
+            <input name="endereco" placeholder="Endereço de Busca" required style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '10px', border: '1px solid #ddd' }} />
+            <button type="submit" style={{ width: '100%', padding: '15px', background: '#ea580c', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 'bold' }}>CONFIRMAR</button>
+            <button type="button" onClick={() => setSelecionado(null)} style={{ width: '100%', background: 'none', border: 'none', marginTop: '15px', color: '#666' }}>Cancelar</button>
           </form>
         </div>
       )}
